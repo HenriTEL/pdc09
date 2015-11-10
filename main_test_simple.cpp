@@ -18,7 +18,6 @@
 #include <unistd.h>
 #include <omp.h>
 #include <sys/stat.h>
-#include <pthread.h>
 
 #include "Global.h"
 #include "ConfigReader.h"
@@ -28,6 +27,7 @@
 #include "StrucClassSSF.h"
 
 #include "label.h"
+#include "utils.h"
 
 using namespace std;
 using namespace vision;
@@ -122,23 +122,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
                 // This labels correspond to a patch centered on position s
                 // (this is the structured version of a random forest!)
                 vector<uint32_t>::const_iterator p = forest[t].predictPtr(s);
-
-
-                for (pt.y=(int)s.y-lPYOff; pt.y <= (int)s.y+(int)lPYOff; ++pt.y)
-                for (pt.x=(int)s.x-(int)lPXOff; pt.x <= (int)s.x+(int)lPXOff; ++pt.x,++p)
-                {
-                	if (*p<0 || *p >= (size_t)cr->numLabels)
-                	{
-                		std::cerr << "Invalid label in prediction: " << (int) *p << "\n";
-                		exit(1);
-                	}
-
-                    if (box.contains(pt))
-                    {
-                        result[*p].at<float>(pt) += 1;
-
-                    }
-                }
+		process_tree(p, box, s, cr, lPXOff, lPYOff, &result);
 
             }
         }
