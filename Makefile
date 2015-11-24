@@ -4,7 +4,7 @@ LD = g++
 WARNGCC= -Wno-sign-compare -Wno-reorder -Wno-unknown-pragmas -Wno-overloaded-virtual
 
 # --- With optimisation
-CPPFLAGS = -openmp -std=c++0x -DNDEBUG -O3 -msse2 -Wall $(WARNGCC)
+CPPFLAGS = -fopenmp -std=c++0x -DNDEBUG -O3 -msse2 -Wall $(WARNGCC)
 LDFLAGS = -DNEBUG -O3 -msse2
 
 # --- Debugging
@@ -13,7 +13,7 @@ LDFLAGS = -DNEBUG -O3 -msse2
 
 
 INCLUDE_DIR =
-LIB_DIR =
+LIB_DIR =-L /usr/lib/gcc/x86_64-redhat-linux/4.8.3 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/libgomp.a -L /usr/lib64 /usr/lib64/libpthread.so
 LIBS = `pkg-config --libs opencv`
 
 simple:	sf1_cpu lab2rgb
