@@ -27,11 +27,11 @@
 #include "StrucClassSSF.h"
 
 #include "label.h"
+#include "utils.h"
 
 using namespace std;
 using namespace vision;
-
-
+    
 /***************************************************************************
  USAGE
  ***************************************************************************/
@@ -83,9 +83,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
     
     // Process all test images
     // result goes into ====> result[].at<>(pt)
-	
-	#pragma omp parallel private(pt) private(matConfusion) private(strOutput) shared(iImage)
-	for (iImage = 0; iImage < pTS->getNbImages(); ++iImage)
+    for (iImage = 0; iImage < pTS->getNbImages(); ++iImage)
     {
     	// Create a sample object, which contains the imageId
         Sample<float> s;
@@ -124,23 +122,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
                 // This labels correspond to a patch centered on position s
                 // (this is the structured version of a random forest!)
                 vector<uint32_t>::const_iterator p = forest[t].predictPtr(s);
-
-
-                for (pt.y=(int)s.y-lPYOff;pt.y<=(int)s.y+(int)lPYOff;++pt.y)
-                for (pt.x=(int)s.x-(int)lPXOff;pt.x<=(int)s.x+(int)lPXOff;++pt.x,++p)
-                {
-                	if (*p<0 || *p >= (size_t)cr->numLabels)
-                	{
-                		std::cerr << "Invalid label in prediction: " << (int) *p << "\n";
-                		exit(1);
-                	}
-
-                    if (box.contains(pt))
-                    {
-                        result[*p].at<float>(pt) += 1;
-
-                    }
-                }
+		process_tree(p, box, s, cr, lPXOff, lPYOff, &result);
 
             }
         }
@@ -169,7 +151,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
         if (cv::imwrite(strOutput, mapResult)==false)
         {
             cout<<"Failed to write to "<<strOutput<<endl;
-            //return;
+            return;
         }
 
         // Write RGB segmentation map
@@ -180,9 +162,9 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
         if (cv::imwrite(strOutput, imgResultRGB)==false)
         {
             cout<<"Failed to write to "<<strOutput<<endl;
-            //return;
-        }
-    }
+            return;
+        } 
+    }    
 }
 
 /***************************************************************************
@@ -199,8 +181,6 @@ int main(int argc, char* argv[])
     int optNumTrees=-1;
     char *optTreeFnamePrefix=NULL;
     char buffer[2048];
-    int c;
-    int optNoImages=12;
 
     srand(time(0));
     setlocale(LC_NUMERIC, "C");
@@ -212,30 +192,13 @@ int main(int argc, char* argv[])
 		<< "******************************************************\n";
 #endif
 
-
-	while ((c =	getopt (argc, argv,	"n:")) != EOF) {
-
-		switch (c) {
-
-      		case 'n':
-        		optNoImages = atoi(optarg);
-        		break;
-
-        	case '?':
-				usage (*argv);
-				std::cerr << "\n*** problem parsing options!\n\n";
-				exit (1);
-        }
-    }
-
-
-    if (argc-optind!=3)
+    if (argc!=4)
         usage(*argv);
     else
     {
-        strConfigFile = argv[optind];
-        optNumTrees = atoi(argv[optind+1]);
-        optTreeFnamePrefix = argv[optind+2];
+        strConfigFile = argv[1];
+        optNumTrees = atoi(argv[2]);
+        optTreeFnamePrefix = argv[3];
     }
 
     if (cr.readConfigFile(strConfigFile)==false)
@@ -262,12 +225,10 @@ int main(int argc, char* argv[])
         
         // CW Create a dummy training set selection with a single image number
         pTrainingSet = new TrainingSetSelection<float>(9, idata);
-        
-        for (int i=0; i<optNoImages; ++i)
-        	((TrainingSetSelection<float> *)pTrainingSet)->vectSelectedImagesIndices.push_back(i);
+        ((TrainingSetSelection<float> *)pTrainingSet)->vectSelectedImagesIndices.push_back(0);
     }
 
-    cout << "Number of requested images: " <<pTrainingSet->getNbImages() << endl;
+    cout<<pTrainingSet->getNbImages()<<" test images"<<endl;
 
     // Load forest
     StrucClassSSF<float> *forest = new StrucClassSSF<float>[optNumTrees];
