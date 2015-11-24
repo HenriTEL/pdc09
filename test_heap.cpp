@@ -8,9 +8,6 @@ using namespace vision;
 	// StructClassSSF.h
 		// Henri
 			// vector<uint32_t>::const_iterator /* & */ predictPtr(Sample<FeatureType> &sample) const
-			// void updateError(IErrorData &newError, const IErrorData &errorData,
-			//     const TNode<SplitData<FeatureType>, Prediction> *node, Prediction &newLeft,
-			//     Prediction &newRight) const
 		// Karim
 			// virtual void write(const TNode<SplitData<FeatureType>, Prediction> *node, ostream &out) const
 			// virtual void read(TNode<SplitData<FeatureType>, Prediction> *node, istream &in) const
@@ -28,6 +25,7 @@ bool test_creation()
 	StrucClassSSF<float> *forest = new StrucClassSSF<float>[10];
 	return true;
 }
+
 
 int main()
 {

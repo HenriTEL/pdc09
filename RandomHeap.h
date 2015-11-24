@@ -79,13 +79,7 @@ public:
     return prediction;
   }
 
-  const TNode<SplitData, Prediction>* getLeft() const
-  {
-    return left;
-  }
-
-
-  int getLeft(int dad)
+  int getLeft(int dad) const
   {
     return dad*2 + 1;
   }
@@ -182,7 +176,10 @@ public:
   }
 
   // ====================  ACCESSORS     =======================================
-
+  bool isLeaf( int nId ) const
+  {
+	  return ( heap[nId].getLeft(nId) >= heap.size() );
+  }
   void save(string filename, bool includeSamples = false) const
   {
     ofstream out(filename.c_str());
@@ -211,8 +208,8 @@ public:
   {
     ifstream in(filename.c_str());
     readHeader(in);
-    heap[0] = new TNode<SplitData, Prediction>(0, 0);
-    read(heap[0], in);
+    heap[0] = TNode<SplitData, Prediction>(0, 0);
+    read(&heap[0], in);
     bool includeSamples;
     in >> includeSamples;
     if (includeSamples)
@@ -235,7 +232,7 @@ protected:
       Prediction &prediction) const = 0;
 
   virtual void updateError(ErrorData &newError, const ErrorData &errorData,
-      const TNode<SplitData, Prediction> *node, Prediction &newLeft,
+      int nId, Prediction &newLeft,
       Prediction &newRight) const = 0;
 
   virtual double getError(const ErrorData &error) const = 0;
