@@ -16,7 +16,7 @@
 
 #include "Global.h"
 #include <vector>
-#include "RandomForest.h"
+#include "RandomHeap.h"
 #include "ImageData.h"
 #include "TrainingSet.h"
 #include <ctime>

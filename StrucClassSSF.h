@@ -45,33 +45,9 @@ public:
   /***************************************************************************
    ***************************************************************************/
 
-  vector<uint32_t>::const_iterator /* & */ predictPtr(Sample<FeatureType> &sample) const
-  {
-    TNode<SplitData<FeatureType>, Prediction> *curNode = this->getRoot();
-    assert(curNode != NULL);
-    SplitResult sr = SR_LEFT;
-    while (!curNode->isLeaf() && sr != SR_INVALID)
-    {
-    if (this->bUseRandomBoxes==true)
-        sr = this->split(curNode->getSplitData(), sample);
-    else
-        sr = AbstractSemanticSegmentationTree<IErrorData,FeatureType>::split(curNode->getSplitData(), sample);
-
-    switch (sr)
-      {
-      case SR_LEFT:
-        curNode = curNode->getLeft();
-        break;
-      case SR_RIGHT:
-        curNode = curNode->getRight();
-        break;
-      default:
-        break;
-      }
-    }
-
-    return curNode->getPrediction().hist.begin();
-  }
+ // vector<uint32_t>::const_iterator /* & */ predictPtr(Sample<FeatureType> &sample) const
+ // {
+ // }
 
   /***************************************************************************
    ***************************************************************************/
@@ -126,79 +102,6 @@ protected:
       const TNode<SplitData<FeatureType>, Prediction> *node, Prediction &newLeft,
       Prediction &newRight) const
   {
-    newError = IErrorData(numLPos);
-    if (node->isLeaf())   // when its the first run decide for the new joint label positions
-    {
-      this->rng.fill(newError.lPos, RNG::UNIFORM, 0, xLDim * yLDim);
-      newError.lPos[0] = (xLDim * yLDim) / 2;  // zero entry is always current center position
-    }
-    else
-      newError.lPos = errorData.lPos;
-
-    // reset variables
-    fill(childPMF[0].begin(), childPMF[0].end(), 0);
-    fill(childPMF[1].begin(), childPMF[1].end(), 0);
-    double childNorm[2] = {0, 0};
-
-    // auto sampleIt = this->samples.begin() + node->getStart();
-    // auto sampleEnd = this->samples.begin() + node->getEnd();
-    typename RandomTree<SplitData<FeatureType>,Sample<FeatureType>,Label,Prediction,IErrorData>::LSamplesVector::const_iterator sampleIt = this->samples.begin() + node->getStart();
-    typename RandomTree<SplitData<FeatureType>,Sample<FeatureType>,Label,Prediction,IErrorData>::LSamplesVector::const_iterator sampleEnd = this->samples.begin() + node->getEnd();
-
-    // get corresponding split results
-    // auto splitResIt = this->splitResults.begin() + node->getStart();
-    SplitResultsVector::const_iterator splitResIt = this->splitResults.begin() + node->getStart();
-    size_t idx, centLab, tmpLab;
-    Point labPos;
-    Rect box(0, 0, 0, 0);
-
-    for(; sampleIt != sampleEnd; ++sampleIt, ++splitResIt)
-    {
-      // get center label which is _always_ a valid one (ie.: centLab < nClasses)
-      centLab = this->ts->getLabel(sampleIt->sample.imageId, sampleIt->sample.x, sampleIt->sample.y);
-      idx = centLab;
-      double incr = this->importance[centLab];
-      box.width = this->ts->getImgWidth(sampleIt->sample.imageId);
-      box.height = this->ts->getImgHeight(sampleIt->sample.imageId);
-
-      for(size_t i = 1; i < newError.lPos.size(); ++i)
-      {
-        labPos.x = sampleIt->sample.x - lPXOff + newError.lPos[i] % xLDim;
-        labPos.y = sampleIt->sample.y - lPYOff + newError.lPos[i] / xLDim;
-        if(box.contains(labPos))
-        {
-          tmpLab = this->ts->getLabel(sampleIt->sample.imageId, labPos.x, labPos.y);
-          if(tmpLab >= this->nClasses)
-          {
-            incr = 0;
-            break;
-          }
-          idx = this->nClasses * idx + tmpLab;
-          incr *= this->importance[tmpLab];
-        }
-        else
-        {
-          idx = this->nClasses * idx + centLab;
-          incr *= this->importance[centLab];
-        }
-      }
-
-      childPMF[*splitResIt][idx] += incr;
-      childNorm[*splitResIt] += incr;
-    }
-
-    double val, partial;
-    for(size_t child = 0; child < 2; ++child)
-    {
-      partial = 0;
-      for(size_t i = 0; i < childPMF[child].size(); ++i)
-      {
-        val = childPMF[child][i] / childNorm[child];
-        if(val > 0)
-          partial -= val * log(val);
-      }
-      newError.entropy += childNorm[child] * partial;
-    }
   }
 
   /***************************************************************************
@@ -598,43 +501,6 @@ protected:
 
   virtual void write(const TNode<SplitData<FeatureType>, Prediction> *node, ostream &out) const
   {
-    out << (node->isLeaf() ? "L " : "N ");
-    out << node->getStart() << " " << node->getEnd() << " " << node->getDepth() << " ";
-    if(!node->isLeaf())
-    {
-    /*
-#if USE_RANDOM_BOXES
-      write(node->getSplitData(), out);
-#else
-      AbstractSemanticSegmentationTree<IErrorData, FeatureType>::write(node->getSplitData(), out);
-#endif
-*/
-    if (this->bUseRandomBoxes==true)
-      write(node->getSplitData(), out);
-    else
-      AbstractSemanticSegmentationTree<IErrorData, FeatureType>::write(node->getSplitData(), out);
-
-    }
-    else
-      write(node->getPrediction(), out);
-
-    // debug of samples location
-    //if(node->isLeaf())
-    //{
-    //  const LSamplesVector &samples = this->getLSamples();
-    //  LSamplesVector::const_iterator sampleIt = samples.begin() + node->getStart();
-    //  const LSamplesVector::const_iterator sampleEnd = samples.begin() + node->getEnd();
-
-    //  for(; sampleIt != sampleEnd; ++sampleIt)
-    //    out << sampleIt->sample.imageId << " " << sampleIt->sample.x << " " << sampleIt->sample.y << " ";
-    //}
-
-    out << endl;
-    if (!node->isLeaf())
-    {
-      write(node->getLeft(), out);
-      write(node->getRight(), out);
-    }
   }
 
   /***************************************************************************
@@ -642,54 +508,6 @@ protected:
 
   virtual void read(TNode<SplitData<FeatureType>, Prediction> *node, istream &in) const
   {
-    char type;
-    in >> type;
-    bool isLeaf = type == 'L';
-
-    if (type!='L' && type!='N')
-    {
-        cout<<"ERROR: unknown node type: "<<type<<endl;
-        exit(-1);
-    }
-    int start, end, depth;
-    in >> start;
-    in >> end;
-    in >> depth;
-    node->setStart(start);
-    node->setEnd(end);
-    node->setDepth(depth);
-
-    if(!isLeaf)
-    {
-      SplitData<FeatureType> splitData;
-      /*
-#if USE_RANDOM_BOXES
-      read(splitData, in);
-#else
-      AbstractSemanticSegmentationTree<IErrorData,FeatureType>::read(splitData, in);
-#endif
-    */
-    if (this->bUseRandomBoxes==true)
-      read(splitData, in);
-    else
-      AbstractSemanticSegmentationTree<IErrorData,FeatureType>::read(splitData, in);
-
-    // cout<<splitData<<endl;
-
-      node->setSplitData(splitData);
-    }
-    else
-    {
-      Prediction prediction;
-      read(prediction, in);
-      node->setPrediction(prediction);
-    }
-    if (!isLeaf)
-    {
-      node->split(node->getStart(), node->getStart());
-      read(node->getLeft(), in);
-      read(node->getRight(), in);
-    }
   }
 
   /***************************************************************************

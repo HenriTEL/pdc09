@@ -262,3 +262,9 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+/*
+ * Une grille avec des blocs, combien de thread par bloc ?
+ * taille bloc ? 8*8, 16*16
+ * On met ce qu'on veut en paramètres de __global__ kernel()
+ * Identification des var avec blockIdx (identifie le bloc), blockDim (dimensions du bloc), threadIdx (numéro de thread)
+ */
