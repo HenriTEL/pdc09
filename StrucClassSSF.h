@@ -600,8 +600,29 @@ protected:
    ***************************************************************************/
 
 
-  virtual void write(const TNode<SplitData<FeatureType>, Prediction> *node, ostream &out) const
+  virtual void write(int nId, ostream &out) const
   {
+    const TNode<SplitData<FeatureType>, Prediction> *node= &this->heap[nId];
+    out << (this->isLeaf(nId) ? "L " : "N ");
+    out << node->getStart() << " " << node->getEnd() << " " << node->getDepth() << " ";
+    if(!this->isLeaf(nId))
+    {
+
+    if (this->bUseRandomBoxes==true)
+      write(node->getSplitData(), out);
+    else
+      AbstractSemanticSegmentationTree<IErrorData, FeatureType>::write(node->getSplitData(), out);
+
+    }
+    else
+      write(node->getPrediction(), out);
+
+    out << endl;
+    if (!this->isLeaf(nId))
+    {
+      write(this->heap[node->getLeft(nId)], out);
+      write(this->heap[node->getRight(nId)], out);
+    }
   }
 
   /***************************************************************************
@@ -609,6 +630,54 @@ protected:
 
   virtual void read(TNode<SplitData<FeatureType>, Prediction> *node, istream &in) const
   {
+    char type;
+    in >> type;
+    bool isLeaf = type == 'L';
+
+    if (type!='L' && type!='N')
+    {
+        cout<<"ERROR: unknown node type: "<<type<<endl;
+        exit(-1);
+    }
+    int start, end, depth;
+    in >> start;
+    in >> end;
+    in >> depth;
+    node->setStart(start);
+    node->setEnd(end);
+    node->setDepth(depth);
+
+    if(!isLeaf)
+    {
+      SplitData<FeatureType> splitData;
+      /*
+#if USE_RANDOM_BOXES
+      read(splitData, in);
+#else
+      AbstractSemanticSegmentationTree<IErrorData,FeatureType>::read(splitData, in);
+#endif
+    */
+    if (this->bUseRandomBoxes==true)
+      read(splitData, in);
+    else
+      AbstractSemanticSegmentationTree<IErrorData,FeatureType>::read(splitData, in);
+
+    // cout<<splitData<<endl;
+
+      node->setSplitData(splitData);
+    }
+    else
+    {
+      Prediction prediction;
+      read(prediction, in);
+      node->setPrediction(prediction);
+    }
+    if (!isLeaf)
+    {
+      node->split(node->getStart(), node->getStart());
+      read(this->heap[node->getLeft(nId)], in);
+      read(this->heap[node->getRight(nId)], in);
+    }
   }
 
   /***************************************************************************
