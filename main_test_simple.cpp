@@ -110,40 +110,42 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
         for(int j = 0; j < result.size(); ++j)
             result[j] = Mat::zeros(box.size(), CV_32FC1);
         
-        // Iterate over input image pixels
-        for(s.y = 0; s.y < box.height; ++s.y)
-        for(s.x = 0; s.x < box.width; ++s.x)
-        {
-            // Obtain forest predictions
-            // Iterate over all trees
-            for(size_t t = 0; t < cr->numTrees; ++t)
-            {
-            	// The prediction itself.
-            	// The given Sample object s contains the imageId and the pixel coordinates.
-                // p is an iterator to a vector over labels (attribut hist of class Prediction)
-                // This labels correspond to a patch centered on position s
-                // (this is the structured version of a random forest!)
-                vector<uint32_t>::const_iterator p = forest[t].predictPtr(s);
+        // Iterate over input image pixels       
+		for(s.y = 0; s.y < box.height; ++s.y)
+		{
+		    for(s.x = 0; s.x < box.width; ++s.x)
+		    {
+		        // Obtain forest predictions
+		        // Iterate over all trees
+		        for(size_t t = 0; t < cr->numTrees; ++t)
+		        {
+		        	// The prediction itself.
+		        	// The given Sample object s contains the imageId and the pixel coordinates.
+		            // p is an iterator to a vector over labels (attribut hist of class Prediction)
+		            // This labels correspond to a patch centered on position s
+		            // (this is the structured version of a random forest!)
+		            vector<uint32_t>::const_iterator p = forest[t].predictPtr(s);
 
 
-                for (pt.y=(int)s.y-lPYOff;pt.y<=(int)s.y+(int)lPYOff;++pt.y)
-                for (pt.x=(int)s.x-(int)lPXOff;pt.x<=(int)s.x+(int)lPXOff;++pt.x,++p)
-                {
-                	if (*p<0 || *p >= (size_t)cr->numLabels)
-                	{
-                		std::cerr << "Invalid label in prediction: " << (int) *p << "\n";
-                		exit(1);
-                	}
+		            for (pt.y=(int)s.y-lPYOff;pt.y<=(int)s.y+(int)lPYOff;++pt.y)
+		            for (pt.x=(int)s.x-(int)lPXOff;pt.x<=(int)s.x+(int)lPXOff;++pt.x,++p)
+		            {
+		            	if (*p<0 || *p >= (size_t)cr->numLabels)
+		            	{
+		            		std::cerr << "Invalid label in prediction: " << (int) *p << "\n";
+		            		exit(1);
+		            	}
 
-                    if (box.contains(pt))
-                    {
-                        result[*p].at<float>(pt) += 1;
+		                if (box.contains(pt))
+		                {
+		                    result[*p].at<float>(pt) += 1;
 
-                    }
-                }
+		                }
+		            }
 
-            }
-        }
+		        }
+		    }
+		}
 
         // Argmax of result ===> mapResult
         size_t maxIdx;
@@ -262,9 +264,11 @@ int main(int argc, char* argv[])
         
         // CW Create a dummy training set selection with a single image number
         pTrainingSet = new TrainingSetSelection<float>(9, idata);
-        
+
         for (int i=0; i<optNoImages; ++i)
+		{
         	((TrainingSetSelection<float> *)pTrainingSet)->vectSelectedImagesIndices.push_back(i);
+		}
     }
 
     cout << "Number of requested images: " <<pTrainingSet->getNbImages() << endl;
@@ -277,10 +281,10 @@ int main(int argc, char* argv[])
     cr.numTrees = optNumTrees;
     cout << "Loading " << cr.numTrees << " trees: \n";
 
-    for(int iTree = 0; iTree < optNumTrees; ++iTree)
+	for(int iTree = 0; iTree < optNumTrees; ++iTree)
     {
         sprintf(buffer, "%s%d.txt", optTreeFnamePrefix, iTree+1);
-        std::cout << "Loading tree from file " << buffer << "\n";
+        //std::cout << "Loading tree from file " << buffer << "\n";
 
         forest[iTree].bUseRandomBoxes = true;
         forest[iTree].load(buffer);

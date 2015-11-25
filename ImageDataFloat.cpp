@@ -34,6 +34,9 @@ namespace vision
     #endif
 
     // load image data
+	bool returnValue = true;
+
+	//#pragma omp parallel private(returnValue) //private(imgInput) private(imgLabel) private(strPostfix) private(scaleFactor) private(iFeature) private(pImgElem) shared(iImg)
     for (iImg = 0; it != end; ++it, ++iImg)
     {
         pImgElem = &(vectImageData[iImg]);
@@ -49,7 +52,7 @@ namespace vision
         if (imgLabel.data==NULL)
         {
             cout<<"Failed to read ground truth image "<<iImg<<": "<<pImgElem->strLabelImagePath<<endl;
-            return false;
+            returnValue =  false;
         }
 
         // This is the first image we read, we can set the size of image data
@@ -67,7 +70,7 @@ namespace vision
             if (imgInput.data==NULL)
             {
                 cout<<"Failed to read input image "<<iImg<<": "<<pImgElem->strInputImage<<endl;
-                return false;
+                returnValue =  false;
             }
 
             cv::resize(imgInput, imgInput, cv::Size(), scaleFactor, scaleFactor);
@@ -75,7 +78,7 @@ namespace vision
             if (imgInput.cols!=iWidth || imgInput.rows!=iHeight)
             {
                 cout<<"Scaled input image and ground truth image have different sizes. Did you set the correct scale factor?"<<endl;
-                return false;
+                returnValue =  false;
             }
 
             #if USE_CORR_COEFF
@@ -102,7 +105,7 @@ namespace vision
 
     cout<<"Image data initialized"<<endl;
 
-    return true;
+    return returnValue;
 }
 
 
