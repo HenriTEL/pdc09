@@ -620,16 +620,17 @@ protected:
     out << endl;
     if (!this->isLeaf(nId))
     {
-      write(this->heap[node->getLeft(nId)], out);
-      write(this->heap[node->getRight(nId)], out);
+      write(node->getLeft(nId), out);
+      write(node->getRight(nId), out);
     }
   }
 
   /***************************************************************************
    ***************************************************************************/
 
-  virtual void read(TNode<SplitData<FeatureType>, Prediction> *node, istream &in) const
+  virtual void read(int nId,  istream &in)
   {
+    TNode<SplitData<FeatureType>, Prediction>* node= &this->heap[nId];
     char type;
     in >> type;
     bool isLeaf = type == 'L';
@@ -675,8 +676,8 @@ protected:
     if (!isLeaf)
     {
       node->split(node->getStart(), node->getStart());
-      read(this->heap[node->getLeft(nId)], in);
-      read(this->heap[node->getRight(nId)], in);
+      read(node->getLeft(nId), in);
+      read(node->getRight(nId), in);
     }
   }
 
