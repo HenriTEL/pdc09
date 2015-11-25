@@ -99,9 +99,83 @@ protected:
    ***************************************************************************/
 
   void updateError(IErrorData &newError, const IErrorData &errorData,
-      const TNode<SplitData<FeatureType>, Prediction> *node, Prediction &newLeft,
+      int nId, Prediction &newLeft,
       Prediction &newRight) const
   {
+	const TNode<SplitData<FeatureType>, Prediction>* node = &(this->heap[nId]);
+	newError = IErrorData(numLPos);
+    if ( this->isLeaf(nId) )   // when its the first run decide for the new joint label positions
+    {
+      this->rng.fill(newError.lPos, RNG::UNIFORM, 0, xLDim * yLDim);
+      newError.lPos[0] = (xLDim * yLDim) / 2;  // zero entry is always current center position
+    }
+    else
+      newError.lPos = errorData.lPos;
+
+    // reset variables
+    fill(childPMF[0].begin(), childPMF[0].end(), 0);
+    fill(childPMF[1].begin(), childPMF[1].end(), 0);
+    double childNorm[2] = {0, 0};
+
+    // auto sampleIt = this->samples.begin() + node->getStart();
+    // auto sampleEnd = this->samples.begin() + node->getEnd();
+    typename RandomTree<SplitData<FeatureType>,Sample<FeatureType>,Label,Prediction,IErrorData>::LSamplesVector::const_iterator sampleIt = this->samples.begin() + node->getStart();
+    typename RandomTree<SplitData<FeatureType>,Sample<FeatureType>,Label,Prediction,IErrorData>::LSamplesVector::const_iterator sampleEnd = this->samples.begin() + node->getEnd();
+
+    // get corresponding split results
+    // auto splitResIt = this->splitResults.begin() + node->getStart();
+    SplitResultsVector::const_iterator splitResIt = this->splitResults.begin() + node->getStart();
+    size_t idx, centLab, tmpLab;
+    Point labPos;
+    Rect box(0, 0, 0, 0);
+
+    for(; sampleIt != sampleEnd; ++sampleIt, ++splitResIt)
+    {
+      // get center label which is _always_ a valid one (ie.: centLab < nClasses)
+      centLab = this->ts->getLabel(sampleIt->sample.imageId, sampleIt->sample.x, sampleIt->sample.y);
+      idx = centLab;
+      double incr = this->importance[centLab];
+      box.width = this->ts->getImgWidth(sampleIt->sample.imageId);
+      box.height = this->ts->getImgHeight(sampleIt->sample.imageId);
+
+      for(size_t i = 1; i < newError.lPos.size(); ++i)
+      {
+        labPos.x = sampleIt->sample.x - lPXOff + newError.lPos[i] % xLDim;
+        labPos.y = sampleIt->sample.y - lPYOff + newError.lPos[i] / xLDim;
+        if(box.contains(labPos))
+        {
+          tmpLab = this->ts->getLabel(sampleIt->sample.imageId, labPos.x, labPos.y);
+          if(tmpLab >= this->nClasses)
+          {
+            incr = 0;
+            break;
+          }
+          idx = this->nClasses * idx + tmpLab;
+          incr *= this->importance[tmpLab];
+        }
+        else
+        {
+          idx = this->nClasses * idx + centLab;
+          incr *= this->importance[centLab];
+        }
+      }
+
+      childPMF[*splitResIt][idx] += incr;
+      childNorm[*splitResIt] += incr;
+    }
+
+    double val, partial;
+    for(size_t child = 0; child < 2; ++child)
+    {
+      partial = 0;
+      for(size_t i = 0; i < childPMF[child].size(); ++i)
+      {
+        val = childPMF[child][i] / childNorm[child];
+        if(val > 0)
+          partial -= val * log(val);
+      }
+      newError.entropy += childNorm[child] * partial;
+    }
   }
 
   /***************************************************************************

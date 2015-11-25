@@ -368,7 +368,7 @@ protected:
       Prediction &prediction) const = 0;
 
   virtual void updateError(ErrorData &newError, const ErrorData &errorData,
-      const TNode<SplitData, Prediction> *node, Prediction &newLeft,
+      int nId, Prediction &newLeft,
       Prediction &newRight) const = 0;
 
   virtual double getError(const ErrorData &error) const = 0;
