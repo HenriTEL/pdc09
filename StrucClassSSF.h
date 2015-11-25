@@ -45,9 +45,36 @@ public:
   /***************************************************************************
    ***************************************************************************/
 
- // vector<uint32_t>::const_iterator /* & */ predictPtr(Sample<FeatureType> &sample) const
- // {
- // }
+	vector<uint32_t>::const_iterator /* & */ predictPtr(Sample<FeatureType> &sample) const
+	{
+		TNode<SplitData<FeatureType>, Prediction>* curNode = this->getRoot();
+		int nId = 0;
+		assert(curNode != NULL);
+		SplitResult sr = SR_LEFT;
+		while (!this->isLeaf(nId) && sr != SR_INVALID)
+		{
+			if (this->bUseRandomBoxes==true)
+				sr = this->split(curNode->getSplitData(), sample);
+			else
+				sr = AbstractSemanticSegmentationTree<IErrorData,FeatureType>::split(curNode->getSplitData(), sample);
+
+			switch (sr)
+			{
+				case SR_LEFT:
+					nId = curNode->getLeft(nId);
+					curNode = &this->heap[nId];
+					break;
+				case SR_RIGHT:
+					nId = curNode->getRight(nId);
+					curNode = &this->heap[nId];
+					break;
+				default:
+					break;
+			}
+		}
+
+		return curNode->getPrediction().hist.begin();
+	}
 
   /***************************************************************************
    ***************************************************************************/

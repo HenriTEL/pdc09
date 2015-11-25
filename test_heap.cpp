@@ -36,4 +36,6 @@ int main()
     std::cout << res << std::endl;
     
 }
-
+// #ifdef DOGPU
+// loadTreeToGPU()
+// predictPtr : kernel

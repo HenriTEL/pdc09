@@ -265,7 +265,7 @@ protected:
 
   TNode<SplitData,Prediction>* getRoot() const
   {
-    return heap[0];
+    return &heap[0];
   }
 
   virtual void writeHeader(ostream &out) const=0;
