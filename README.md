@@ -1,4 +1,2 @@
 # pdc09
-Parrallelization of sequential algorithms.
-The branch openMP contain oenMP parallelization code
-in the utils.cpp file
+Branche openMP qui fait de la parallélisation processeur, et branche Cuda qui fait de la parallélisation sur carte graphique.
