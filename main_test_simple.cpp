@@ -84,13 +84,13 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
     // Process all test images
     // result goes into ====> result[].at<>(pt)
 	
-	#pragma omp parallel private(pt) private(matConfusion) private(strOutput) shared(iImage)
+	#pragma omp parallel for private(pt, matConfusion, strOutput, iImage)
 	for (iImage = 0; iImage < pTS->getNbImages(); ++iImage)
     {
     	// Create a sample object, which contains the imageId
         Sample<float> s;
 
-        std::cout << "Testing image nr. " << iImage+1 << "\n";
+        //std::cout << "Testing image nr. " << iImage+1 << "\n";
 
         s.imageId = iImage;
         cv::Rect box(0, 0, pTS->getImgWidth(s.imageId), pTS->getImgHeight(s.imageId));
