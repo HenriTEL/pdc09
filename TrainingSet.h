@@ -340,7 +340,7 @@ template <class FeatureType> class TrainingSetSelection2ndStage : public Trainin
 
         pData1stStage = pData2ndStage->GetData1stStage();
 
-        if (channel>=0 && channel<pData1stStage->getNbFeatures())
+        if (channel<pData1stStage->getNbFeatures())
         {
             vector<cv::Mat> *pFeatureImages;
 
@@ -455,7 +455,7 @@ template <class FeatureType> class TrainingSetSelection2ndStage : public Trainin
 
         pData1stStage = pData2ndStage->GetData1stStage();
 
-        if (channel>=0 && channel<pData1stStage->getNbFeatures())
+        if (channel<pData1stStage->getNbFeatures())
         {
             pData1stStage = pData2ndStage->GetData1stStage();
 
@@ -646,6 +646,33 @@ template <class FeatureType> class TrainingSetSelection2ndStage : public Trainin
         return (uint16_t)vectSelectedImagesIndices.size();
     }
 
+#ifdef GPU
+	/***************************************************************************
+ 	 Flatten all features in a single 1D table
+ 	 ***************************************************************************/
+    virtual void getFlattenedFeatures(uint16_t imageId, FeatureType **out_features, int *out_nbChannels) const
+    {
+        vector<cv::Mat> *pFeatureImages = this->pImageData->getFeatureImages(vectSelectedImagesIndices[imageId]);
+        assert(pFeatureImages!=NULL);
+
+        FeatureType *flat = (FeatureType *) malloc (sizeof(FeatureType)*(this->iWidth)*(this->iHeight)*(this->nChannels));
+        if (flat==NULL)
+        {
+        	std::cerr << "Cannot allocate flat feature data\n";
+        	exit(1);
+        }
+        
+        for (int c=0; c<this->nChannels; ++c)
+        for (int x=0; x<this->iWidth; ++x)
+        for (int y=0; y<this->iHeight; ++y)
+        	flat[y+x*(this->iHeight)+c*(this->iHeight)*(this->iWidth)] =       
+        		(*pFeatureImages)[c].at<FeatureType>(y, x);
+        
+        *out_features = flat;
+        *out_nbChannels = this->nChannels;
+    }
+#endif
+
   public:
     vector<unsigned int> vectSelectedImagesIndices;
 };
@@ -665,7 +692,7 @@ template <class FeatureType> class TrainingSetSelection2ndStageBinary : public T
 
         pData1stStage = pData2ndStage->GetData1stStage();
 
-        if (channel>=0 && channel<pData1stStage->getNbFeatures())
+        if (channel<pData1stStage->getNbFeatures())
         {
             vector<cv::Mat> *pFeatureImages;
 
@@ -692,7 +719,7 @@ template <class FeatureType> class TrainingSetSelection2ndStageBinary : public T
 
         pData1stStage = pData2ndStage->GetData1stStage();
 
-        if (channel>=0 && channel<pData1stStage->getNbFeatures())
+        if (channel<pData1stStage->getNbFeatures())
         {
             pData1stStage = pData2ndStage->GetData1stStage();
 

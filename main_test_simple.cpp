@@ -80,7 +80,11 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
     cv::Point pt;
     cv::Mat matConfusion;
     char strOutput[200];
-    
+#ifdef GPU
+	float *features, *features_integral;
+	int noChannels;
+#endif		   
+
     // Process all test images
     // result goes into ====> result[].at<>(pt)
     for (iImage = 0; iImage < pTS->getNbImages(); ++iImage)
@@ -93,12 +97,31 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
         s.imageId = iImage;
         cv::Rect box(0, 0, pTS->getImgWidth(s.imageId), pTS->getImgHeight(s.imageId));
         cv::Mat mapResult = cv::Mat::ones(box.size(), CV_8UC1) * cr->numLabels;
-
-        
+#ifdef GPU
         // ==============================================
-        // THE CLASSICAL CPU SOLUTION
+        // GPU SOLUTION
         // ==============================================
+		int16_t w_integral, h_integral;
+		unsigned int *result = new unsigned int [box.height*box.width*cr->numLabels];
+		unsigned int *_gpuResult;
+		float *_gpuFeatures, *_gpuFeaturesIntegral;
+		// Get a flattened array containing all features for this image
+		pTS->getFlattenedFeatures(iImage, &features, &noChannels);
+		pTS->getFlattenedIntegralFeatures(iImage, &features_integral, &w_integral, &h_integral);
 
+		profiling("GPU BRO");
+
+		preKernel(features, features_integral, &_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult,
+			box.width, box.height, w_integral, h_integral, noChannels, cr->numLabels);
+			
+		// TODO lauch kernel
+	
+		postKernel(&_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult, result,
+			box.width, box.height,  cr->numLabels);
+#else		
+        // ==============================================
+        // CPU SOLUTION
+        // ==============================================
         profiling("");
         int lPXOff = cr->labelPatchWidth / 2;
     	int lPYOff = cr->labelPatchHeight / 2;
@@ -140,7 +163,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 
 				}
 			}
-
+#endif
         // Argmax of result ===> mapResult
         size_t maxIdx;
         for (pt.y = 0; pt.y < box.height; ++pt.y)
@@ -178,7 +201,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
             cout<<"Failed to write to "<<strOutput<<endl;
             return;
         } 
-    }    
+    }
 }
 
 /***************************************************************************
@@ -265,6 +288,7 @@ int main(int argc, char* argv[])
     cout << "done!" << endl;
     profiling("Tree loading");
     
+
     testStructClassForest(forest, &cr, pTrainingSet);
 
     // delete tree;

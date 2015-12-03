@@ -10,4 +10,5 @@ main_test_simple
 
 # TODO
 OK 1- compile with nvcc
-2 - Integrate teacher's code
+OK 2 - Integrate teacher's code
+3 - Convert tries to arrays
