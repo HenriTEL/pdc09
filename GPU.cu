@@ -1,5 +1,5 @@
-#ifndef GPU
-#define GPU
+#ifndef GPU_h_
+#define GPU_h_
 
 #include <iostream>
 #include <string>
@@ -64,6 +64,7 @@ void preKernel(float *features, float *features_integral,
 	check_cuda(ok, err_alloc);
 
 }
+
 
 /***************************************************************************
  After the kernel call:

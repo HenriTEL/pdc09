@@ -22,27 +22,62 @@
 #include <stdint.h>
 
 #include "Global.h"
+#ifdef GPU
+	#include "TNodeGPU.h"
+#endif
 
 using namespace std;
 
 namespace vision
 {
+// TODO manage ifdef GPU
+//#ifdef GPU
+	template<class SplitData, class Prediction> class TNodeGPU
+	{
+	public:
+	  // ====================  LIFECYCLE     =======================================
+	  TNodeGPU() {}
+
+	  TNodeGPU( SplitData splitData, Prediction prediction,
+		uint32_t start, uint32_t end, uint16_t depth, uint32_t idx )
+	  {
+			this->splitData = splitData;
+			this->prediction = prediction;
+			this->start = start;
+			this->end = end;
+			this->depth = depth;
+			this->idx = idx;
+	  }
+
+	  ~TNodeGPU() {}
+
+	  // ====================  DATA MEMBERS  =======================================
+	  SplitData splitData;
+	  Prediction prediction;
+	  uint32_t start, end;
+	  uint16_t depth;
+	  uint32_t idx;
+	};
+// -----  end of class TNodeGPU  -----
+//#endif
 
 // =====================================================================================
 //        Class:  TNode
 //  Description:
 // =====================================================================================
 template<class SplitData, class Prediction>
-class TNode
+class TNode : public TNodeGPU<SplitData, Prediction>
 {
 public:
   // ====================  LIFECYCLE     =======================================
   TNode(int start, int end) :
-      left(NULL), right(NULL), start(start), end(end), depth(0)
+      left(NULL), right(NULL)
   {
     static int iNode = 0;
-    idx = iNode++;
-
+    this->idx = iNode++;
+	this->start = start;
+	this->end = end;
+	this->depth = 0;
     // cout<<endl<<"New node "<<idx<<" "<<hex<<this<<dec<<endl;
   }
 
@@ -59,30 +94,30 @@ public:
   }
   int getStart() const
   {
-    return start;
+    return this->start;
   }
   int getEnd() const
   {
-    return end;
+    return this->end;
   }
 
   int getNSamples() const
   {
-    return end - start;
+    return this->end - this->start;
   }
 
   int getDepth() const
   {
-    return depth;
+    return this->depth;
   }
 
   const SplitData &getSplitData() const
   {
-    return splitData;
+    return this->splitData;
   }
   const Prediction &getPrediction() const
   {
-    return prediction;
+    return this->prediction;
   }
 
   const TNode<SplitData, Prediction>* getLeft() const
@@ -133,13 +168,13 @@ public:
 
   void split(uint32_t start, uint32_t middle)
   {
-    assert(start >= this->start && middle >= start && middle <= end);
+    assert(start >= this->start && middle >= start && middle <= this->end);
     if (left == NULL)
     {
       left = new TNode<SplitData, Prediction>(start, middle);
-      right = new TNode<SplitData, Prediction>(middle, end);
-      left->setDepth(depth + 1);
-      right->setDepth(depth + 1);
+      right = new TNode<SplitData, Prediction>(middle, this->end);
+      left->setDepth(this->depth + 1);
+      right->setDepth(this->depth + 1);
     }
     else
     {
@@ -149,6 +184,39 @@ public:
     }
   }
 
+#ifdef GPU
+	void get_left( int nId )
+	{
+		return 2 * nId + 1;
+	}
+
+	void get_right( int nId )
+	{
+		return get_left(nId) + 1;
+	}
+
+	void cpt_node( int* nb)
+	{
+		(*nb)++;
+		if( left != NULL )
+			left->cpt_node(nb);
+		if( right != NULL )
+			right->cpt_node(nb);
+	}
+
+	void fill_heap(TNodeGPU* heap, int nId)
+	{
+		heap[nId] = TNodeGPU( this.splitData,
+	  this.prediction,
+	  this.start, this.end,
+	  this.depth,
+	  this.idx);
+		if( left != NULL )
+			left->fill_heap(heap, get_left(nId));
+		if( right != NULL )
+			left->fill_heap(heap, get_right(nId));
+	}
+#endif
   // ====================  OPERATORS     =======================================
 
 protected:
@@ -163,11 +231,6 @@ private:
 
 public:
   TNode<SplitData, Prediction> *left, *right;
-  SplitData splitData;
-  Prediction prediction;
-  uint32_t start, end;
-  uint16_t depth;
-  uint32_t idx;
 
 };
 // -----  end of class TNode  -----
@@ -198,13 +261,16 @@ public:
   typedef vector<LSample> LSamplesVector;
   // ====================  LIFECYCLE     =======================================
   RandomTree() :
-      root(NULL)
+      root(NULL), is_heap(false)
   {
   }
 
   virtual ~RandomTree()
   {
-    delete root;
+	if( is_heap )
+		delete (TNodeGPU<SplitData, Prediction>*)root;
+	else
+		delete root;
     root = NULL;
   }
 
@@ -352,6 +418,21 @@ public:
       read(this->samples, in);
   }
 
+#ifdef GPU
+	void heapify()
+	{
+		int node_nb = 0;
+		TNodeGPU* heap;
+
+		root->cpt_node(&node_nb);
+		heap = new TNodeGPU[node_nb];
+		root->fill_heap(heap, 0);
+		delete root;
+		root = heap;
+		is_heap = true;
+		// TODO delete
+	}
+#endif
   // ====================  OPERATORS     =======================================
 
 protected:
@@ -568,6 +649,7 @@ protected:
   TNode<SplitData, Prediction> *root;
   LSamplesVector samples;
   SplitResultsVector splitResults;
+  bool is_heap;
 
   SplitData cSplitData;
   Prediction cLeftPrediction, cRightPrediction;

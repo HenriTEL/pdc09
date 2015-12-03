@@ -111,8 +111,13 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 
 		profiling("GPU BRO");
 
+		for(size_t t = 0; t < cr->numTrees; ++t)
+		// Heapify forest
+			forest[t].heapify();
+					
 		preKernel(features, features_integral, &_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult,
 			box.width, box.height, w_integral, h_integral, noChannels, cr->numLabels);
+		
 			
 		// TODO lauch kernel
 	
