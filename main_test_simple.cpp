@@ -80,12 +80,13 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
     cv::Point pt;
     cv::Mat matConfusion;
     char strOutput[200];
+	int nbImages = pTS->getNbImages();
     
     // Process all test images
     // result goes into ====> result[].at<>(pt)
 	
-	#pragma omp parallel for private(pt, matConfusion, strOutput, iImage)
-	for (iImage = 0; iImage < pTS->getNbImages(); ++iImage)
+	#pragma omp parallel for private(iImage) firstprivate(pt, matConfusion, strOutput, nbImages)
+	for (iImage = 0; iImage < nbImages; ++iImage)
     {
     	// Create a sample object, which contains the imageId
         Sample<float> s;
@@ -214,73 +215,81 @@ int main(int argc, char* argv[])
 		<< "******************************************************\n";
 #endif
 
+	#pragma omp sections
+	{
+		#pragma omp section
+		while ((c =	getopt (argc, argv,	"n:")) != EOF)
+		{
 
-	while ((c =	getopt (argc, argv,	"n:")) != EOF) {
+			switch (c) {
 
-		switch (c) {
+		  		case 'n':
+		    		optNoImages = atoi(optarg);
+		    		break;
 
-      		case 'n':
-        		optNoImages = atoi(optarg);
-        		break;
-
-        	case '?':
-				usage (*argv);
-				std::cerr << "\n*** problem parsing options!\n\n";
-				exit (1);
-        }
-    }
+		    	case '?':
+					usage (*argv);
+					std::cerr << "\n*** problem parsing options!\n\n";
+					exit (1);
+		    }
+		}
 
 
-    if (argc-optind!=3)
-        usage(*argv);
-    else
-    {
-        strConfigFile = argv[optind];
-        optNumTrees = atoi(argv[optind+1]);
-        optTreeFnamePrefix = argv[optind+2];
-    }
+		#pragma omp section
+		if (argc-optind!=3)
+		    usage(*argv);
+		else
+		{
+		    strConfigFile = argv[optind];
+		    optNumTrees = atoi(argv[optind+1]);
+		    optTreeFnamePrefix = argv[optind+2];
+		}
 
-    if (cr.readConfigFile(strConfigFile)==false)
-    {
-        cout<<"Failed to read config file "<<strConfigFile<<endl;
-        return -1;
-    }
+		#pragma omp section
+		if (cr.readConfigFile(strConfigFile)==false)
+		{
+		    cout<<"Failed to read config file "<<strConfigFile<<endl;
+		    exit (-1);
+		}
+	}
 
     // Load image data
     idata->bGenerateFeatures = true;
 
-    if (idata->setConfiguration(cr)==false)
-    {
-        cout<<"Failed to initialize image data with configuration"<<endl;
-        return -1;
-    }
+	if (idata->setConfiguration(cr)==false)
+	{
+	    cout<<"Failed to initialize image data with configuration"<<endl;
+	    exit (-1);
+	}
 
-    if (bTestAll==true)
-    {
-        std::cout << "Set contains all images. Not supported.\n";
-        exit(1);
-    }
-    else {
-        
-        // CW Create a dummy training set selection with a single image number
-        pTrainingSet = new TrainingSetSelection<float>(9, idata);
+	if (bTestAll==true)
+	{
+	    std::cout << "Set contains all images. Not supported.\n";
+	    exit(1);
+	}
+	else
+	{
+	    
+	    // CW Create a dummy training set selection with a single image number
+	    pTrainingSet = new TrainingSetSelection<float>(9, idata);
 
-        for (int i=0; i<optNoImages; ++i)
+	    for (int i=0; i<optNoImages; ++i)
 		{
-        	((TrainingSetSelection<float> *)pTrainingSet)->vectSelectedImagesIndices.push_back(i);
+	    	((TrainingSetSelection<float> *)pTrainingSet)->vectSelectedImagesIndices.push_back(i);
 		}
-    }
+	}
 
     cout << "Number of requested images: " <<pTrainingSet->getNbImages() << endl;
 
     // Load forest
-    StrucClassSSF<float> *forest = new StrucClassSSF<float>[optNumTrees];
+	StrucClassSSF<float> *forest = new StrucClassSSF<float>[optNumTrees];
 
-    profiling("Init + feature extraction");
+	profiling("Init + feature extraction");
 
-    cr.numTrees = optNumTrees;
-    cout << "Loading " << cr.numTrees << " trees: \n";
+	cr.numTrees = optNumTrees;
+	cout << "Loading " << cr.numTrees << " trees: \n";
 
+	#pragma omp parallel for firstprivate(optNumTrees, optTreeFnamePrefix) private(buffer) shared(forest)
 	for(int iTree = 0; iTree < optNumTrees; ++iTree)
     {
         sprintf(buffer, "%s%d.txt", optTreeFnamePrefix, iTree+1);

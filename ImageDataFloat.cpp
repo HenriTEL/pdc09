@@ -36,6 +36,7 @@ namespace vision
     #endif
 
     // load image data
+	// ATTENTION : ce pragma change les résultats (certaines images dupliquées et d'autres absentes)	
 	#pragma omp parallel for private(iImg, pImgElem, strPostfix, iFeature, imgInput, imgLabel) shared(scaleFactor, it)
 	for (iImg = 0; iImg < nbImg; ++iImg)
     {
