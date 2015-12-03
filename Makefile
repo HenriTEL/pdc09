@@ -1,3 +1,8 @@
+INCLUDE_DIR =
+LIB_DIR =
+LIBS = `pkg-config --libs opencv`
+
+############################################################
 # GPU
 CC = /usr/local/cuda-7.5/bin/nvcc
 LD = /usr/local/cuda-7.5/bin/nvcc
@@ -5,7 +10,17 @@ CPPFLAGS=$(CCONFIG)
 CPPFLAGS+=`pkg-config --cflags opencv`
 LDFLAGS=$(LCONFIG) `pkg-config opencv --libs` -lstdc++
 
+simple:	sf1_gpu lab2rgb
 
+testgpu:
+	./sf1_gpu simple-data/config.txt 6 simple-data/tree
+
+sf1_gpu: GPU.o ConfigReader.o ImageData.o ImageDataFloat.o labelfeature.o label.o main_test_simple.o
+	$(LD) $+ -o $@ $(LDFLAGS) $(LIB_DIR) $(LIBS)
+
+GPU.o: GPU.cu
+	$(CC) -c $(CPPFLAGS) $(INCLUDE_DIR) $< -o $@
+############################################################
 # CPU
 #CC = g++
 #LD = g++
@@ -13,29 +28,25 @@ LDFLAGS=$(LCONFIG) `pkg-config opencv --libs` -lstdc++
 #CPPFLAGS = -openmp -std=c++0x -DNDEBUG -O3 -msse2 -Wall $(WARNGCC)
 #LDFLAGS = -DNEBUG -O3 -msse2
 
-# --- Debugging
+## --- Debugging
 #CPPFLAGS = -std=c++0x -g -Wall $(WARNGCC) 
 #LDFLAGS = 
 
+#simple:	sf1_cpu lab2rgb
 
-INCLUDE_DIR =
-LIB_DIR =
-LIBS = `pkg-config --libs opencv`
+#testcpu:
+#	./sf1_cpu simple-data/config.txt 6 simple-data/tree
 
-simple:	sf1_cpu lab2rgb
+#sf1_cpu: ConfigReader.o ImageData.o ImageDataFloat.o labelfeature.o label.o main_test_simple.o
+#	$(LD) $+ -o $@ $(LDFLAGS) $(LIB_DIR) $(LIBS)
 
-
-testcpu:
-	./sf1_cpu simple-data/config.txt 6 simple-data/tree
-
+############################################################
+# GLOBAL
 %.o: %.cpp 
 	$(CC) -c $(CPPFLAGS) $(INCLUDE_DIR) $< -o $@
 
 main_test_simple.o: main_test_simple.cpp
 	$(CC) -c $(CPPFLAGS) $(INCLUDE_DIR) $< -o $@
-
-sf1_cpu: ConfigReader.o ImageData.o ImageDataFloat.o labelfeature.o label.o main_test_simple.o utils.o
-	$(LD) $+ -o $@ $(LDFLAGS) $(LIB_DIR) $(LIBS)
 
 lab2rgb: lab2rgb.o label.o
 	$(LD) $+ -o $@ $(LDFLAGS) $(LIB_DIR) $(LIBS)
