@@ -22,9 +22,6 @@
 #include <stdint.h>
 
 #include "Global.h"
-#ifdef GPU
-	#include "TNodeGPU.h"
-#endif
 
 using namespace std;
 
@@ -185,12 +182,12 @@ public:
   }
 
 #ifdef GPU
-	void get_left( int nId )
+	int get_left( int nId )
 	{
 		return 2 * nId + 1;
 	}
 
-	void get_right( int nId )
+	int get_right( int nId )
 	{
 		return get_left(nId) + 1;
 	}
@@ -204,13 +201,10 @@ public:
 			right->cpt_node(nb);
 	}
 
-	void fill_heap(TNodeGPU* heap, int nId)
+	void fill_heap(TNodeGPU<SplitData, Prediction>* heap, int nId)
 	{
-		heap[nId] = TNodeGPU( this.splitData,
-	  this.prediction,
-	  this.start, this.end,
-	  this.depth,
-	  this.idx);
+		heap[nId] = TNodeGPU<SplitData, Prediction>( this->splitData,
+			this->prediction, this->start, this->end, this->depth, this->idx );
 		if( left != NULL )
 			left->fill_heap(heap, get_left(nId));
 		if( right != NULL )
@@ -422,13 +416,13 @@ public:
 	void heapify()
 	{
 		int node_nb = 0;
-		TNodeGPU* heap;
+		TNodeGPU<SplitData, Prediction>* heap;
 
 		root->cpt_node(&node_nb);
-		heap = new TNodeGPU[node_nb];
+		heap = new TNodeGPU<SplitData, Prediction>[node_nb];
 		root->fill_heap(heap, 0);
 		delete root;
-		root = heap;
+		root = (TNode<SplitData, Prediction>*)heap;
 		is_heap = true;
 		// TODO delete
 	}

@@ -213,9 +213,6 @@ template <class FeatureType> class TrainingSetSelection : public TrainingSet<Fea
     {
     }
 
-
-    
-
     virtual FeatureType getValue(uint16_t imageId, uint8_t channel, int16_t x, int16_t y) const
     {
         vector<cv::Mat> *pFeatureImages;
@@ -273,6 +270,59 @@ template <class FeatureType> class TrainingSetSelection : public TrainingSet<Fea
             return sum;
         }
     }
+
+
+#ifdef GPU
+	/***************************************************************************
+ 	 Flatten all integral features in a single 1D table
+ 	 ***************************************************************************/
+    virtual void getFlattenedIntegralFeatures(uint16_t imageId, FeatureType** out_features, int16_t* w_integral, int16_t* h_integral) const
+    {
+        vector<cv::Mat> *pIntegralFeatureImages = this->pImageData->getFeatureIntegralImages(vectSelectedImagesIndices[imageId]);
+        assert(pIntegralFeatureImages!=NULL);
+		*h_integral = (*pIntegralFeatureImages)[0].rows;
+		*w_integral = (*pIntegralFeatureImages)[0].cols;
+		
+        FeatureType *flat = (FeatureType *) malloc (sizeof(FeatureType)*(*w_integral)*(*h_integral)*(this->nChannels));
+        if (flat==NULL)
+        {
+        	std::cerr << "Cannot allocate flat IntegralFeature data\n";
+        	exit(1);
+        }
+        
+        for (int c=0; c < this->nChannels; ++c)
+        for (int x=0; x < *w_integral; ++x)
+        for (int y=0; y < *h_integral; ++y)
+        	flat[y+x*(*h_integral)+c*(*h_integral)*(*w_integral)] =       
+        		(*pIntegralFeatureImages)[c].at<FeatureType>(y, x);
+        
+        *out_features = flat;
+    }
+	/***************************************************************************
+ 	 Flatten all features in a single 1D table
+ 	 ***************************************************************************/
+    virtual void getFlattenedFeatures(uint16_t imageId, FeatureType **out_features, int *out_nbChannels) const
+    {
+        vector<cv::Mat> *pFeatureImages = this->pImageData->getFeatureImages(vectSelectedImagesIndices[imageId]);
+        assert(pFeatureImages!=NULL);
+
+        FeatureType *flat = (FeatureType *) malloc (sizeof(FeatureType)*(this->iWidth)*(this->iHeight)*(this->nChannels));
+        if (flat==NULL)
+        {
+        	std::cerr << "Cannot allocate flat feature data\n";
+        	exit(1);
+        }
+        
+        for (int c=0; c<this->nChannels; ++c)
+        for (int x=0; x<this->iWidth; ++x)
+        for (int y=0; y<this->iHeight; ++y)
+        	flat[y+x*(this->iHeight)+c*(this->iHeight)*(this->iWidth)] =       
+        		(*pFeatureImages)[c].at<FeatureType>(y, x);
+        
+        *out_features = flat;
+        *out_nbChannels = this->nChannels;
+    }
+#endif
 
     virtual uint8_t getLabel(uint16_t imageId, int16_t x, int16_t y) const
     {
@@ -645,33 +695,6 @@ template <class FeatureType> class TrainingSetSelection2ndStage : public Trainin
     {
         return (uint16_t)vectSelectedImagesIndices.size();
     }
-
-#ifdef GPU
-	/***************************************************************************
- 	 Flatten all features in a single 1D table
- 	 ***************************************************************************/
-    virtual void getFlattenedFeatures(uint16_t imageId, FeatureType **out_features, int *out_nbChannels) const
-    {
-        vector<cv::Mat> *pFeatureImages = this->pImageData->getFeatureImages(vectSelectedImagesIndices[imageId]);
-        assert(pFeatureImages!=NULL);
-
-        FeatureType *flat = (FeatureType *) malloc (sizeof(FeatureType)*(this->iWidth)*(this->iHeight)*(this->nChannels));
-        if (flat==NULL)
-        {
-        	std::cerr << "Cannot allocate flat feature data\n";
-        	exit(1);
-        }
-        
-        for (int c=0; c<this->nChannels; ++c)
-        for (int x=0; x<this->iWidth; ++x)
-        for (int y=0; y<this->iHeight; ++y)
-        	flat[y+x*(this->iHeight)+c*(this->iHeight)*(this->iWidth)] =       
-        		(*pFeatureImages)[c].at<FeatureType>(y, x);
-        
-        *out_features = flat;
-        *out_nbChannels = this->nChannels;
-    }
-#endif
 
   public:
     vector<unsigned int> vectSelectedImagesIndices;

@@ -27,7 +27,7 @@
 #include "StrucClassSSF.h"
 
 #include "label.h"
-#include "utils.h"
+#include "GPU.h"
 
 using namespace std;
 using namespace vision;
@@ -121,7 +121,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 			
 		// TODO lauch kernel
 	
-		postKernel(&_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult, result,
+		postKernel(_gpuFeatures, _gpuFeaturesIntegral, _gpuResult, result,
 			box.width, box.height,  cr->numLabels);
 #else		
         // ==============================================
@@ -176,12 +176,14 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
         {
             maxIdx = 0;
 
-
             for(int j = 1; j < cr->numLabels; ++j)
             {
-
+#ifdef GPU
+				//maxIdx = (result[j].at<float>(pt) > result[maxIdx].at<float>(pt)) ? j : maxIdx;
+#else
                 maxIdx = (result[j].at<float>(pt) > result[maxIdx].at<float>(pt)) ? j : maxIdx;
-            }
+#endif
+			}
 
             mapResult.at<uint8_t>(pt) = (uint8_t)maxIdx;
         }

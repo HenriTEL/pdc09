@@ -6,9 +6,9 @@ LIBS = `pkg-config --libs opencv`
 # GPU
 CC = /usr/local/cuda-7.5/bin/nvcc
 LD = /usr/local/cuda-7.5/bin/nvcc
-CPPFLAGS=$(CCONFIG)
+CPPFLAGS=-DGPU $(CCONFIG)
 CPPFLAGS+=`pkg-config --cflags opencv`
-LDFLAGS=$(LCONFIG) `pkg-config opencv --libs` -lstdc++
+LDFLAGS=-DGPU $(LCONFIG) `pkg-config opencv --libs` -lstdc++
 
 simple:	sf1_gpu lab2rgb
 
@@ -26,7 +26,7 @@ GPU.o: GPU.cu
 #LD = g++
 #WARNGCC= -Wno-sign-compare -Wno-reorder -Wno-unknown-pragmas -Wno-overloaded-virtual
 #CPPFLAGS = -openmp -std=c++0x -DNDEBUG -O3 -msse2 -Wall $(WARNGCC)
-#LDFLAGS = -DNEBUG -O3 -msse2
+#LDFLAGS = -DNDEBUG -O3 -msse2
 
 ## --- Debugging
 #CPPFLAGS = -std=c++0x -g -Wall $(WARNGCC) 

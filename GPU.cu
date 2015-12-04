@@ -1,15 +1,13 @@
-#ifndef GPU_h_
-#define GPU_h_
-
 #include <iostream>
 #include <string>
 
+/* Cuda stuff */
+#include <cuda_runtime_api.h>
+#include <cuda.h>
+
+#include "GPU.h"
 #include "TrainingSet.h"
 
-using namespace vision;
-
-std::string err_alloc = "could not alloc data in GPU";
-std::string err_cpy = "could not transfert data to GPU";
 
 void check_cuda( cudaError_t ok, std::string message )
 {
@@ -96,4 +94,3 @@ void postKernel(float *_gpuFeatures, float *_gpuFeaturesIntegral, unsigned int *
 	cudaFree(_gpuResult);
 	// TODO free the forest
 }
-#endif
