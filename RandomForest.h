@@ -255,13 +255,13 @@ public:
   typedef vector<LSample> LSamplesVector;
   // ====================  LIFECYCLE     =======================================
   RandomTree() :
-      root(NULL), is_heap(false)
+      root(NULL), heap_size(0)
   {
   }
 
   virtual ~RandomTree()
   {
-	if( is_heap )
+	if( heap_size > 0 )
 		delete (TNodeGPU<SplitData, Prediction>*)root;
 	else
 		delete root;
@@ -308,6 +308,11 @@ public:
   }
 
 
+  int getHeapSize()
+  {
+	  return heap_size;
+  }
+  
   // ====================  MUTATORS      =======================================
 
   void train(const LSamplesVector &trainingSamples, int nTrials, bool interleavedTraining = false)
@@ -423,7 +428,7 @@ public:
 		root->fill_heap(heap, 0);
 		delete root;
 		root = (TNode<SplitData, Prediction>*)heap;
-		is_heap = true;
+		heap_size = sizeof(heap);
 		// TODO delete
 	}
 #endif
@@ -643,7 +648,7 @@ protected:
   TNode<SplitData, Prediction> *root;
   LSamplesVector samples;
   SplitResultsVector splitResults;
-  bool is_heap;
+  int heap_size;
 
   SplitData cSplitData;
   Prediction cLeftPrediction, cRightPrediction;

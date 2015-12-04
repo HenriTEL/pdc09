@@ -104,6 +104,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 		int16_t w_integral, h_integral;
 		unsigned int *result = new unsigned int [box.height*box.width*cr->numLabels];
 		unsigned int *_gpuResult;
+		StrucClassSSF<float> * _gpuForest;
 		float *_gpuFeatures, *_gpuFeaturesIntegral;
 		// Get a flattened array containing all features for this image
 		pTS->getFlattenedFeatures(iImage, &features, &noChannels);
@@ -111,12 +112,12 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 
 		profiling("GPU BRO");
 
-		for(size_t t = 0; t < cr->numTrees; ++t)
 		// Heapify forest
+		for(size_t t = 0; t < cr->numTrees; ++t)
 			forest[t].heapify();
 					
 		preKernel(features, features_integral, &_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult,
-			box.width, box.height, w_integral, h_integral, noChannels, cr->numLabels);
+			box.width, box.height, w_integral, h_integral, noChannels, cr->numLabels, 6, forest, &_gpuForest);
 		
 			
 		// TODO lauch kernel

@@ -7,7 +7,9 @@
 
 #include "GPU.h"
 #include "TrainingSet.h"
+#include "StrucClassSSF.h"
 
+using namespace vision;
 
 void check_cuda( cudaError_t ok, std::string message )
 {
@@ -36,7 +38,7 @@ float gpuGetValueIntegral (float *gpuFeaturesIntegral, uint8_t channel,
 void preKernel(float *features, float *features_integral,
 	float **_gpuFeatures, float **_gpuFeaturesIntegral, unsigned int **_gpuResult,
 	int16_t w, int16_t h, int16_t w_integral, int16_t h_integral, int16_t noChannels, 
-	int numLabels)
+	int numLabels, int16_t numTries, StrucClassSSF<float> *forest, StrucClassSSF<float> **_gpuForest)
 {
 	cudaError_t ok;
 	int size;
@@ -54,8 +56,16 @@ void preKernel(float *features, float *features_integral,
 	ok = cudaMemcpy (*_gpuFeaturesIntegral, features_integral, size, cudaMemcpyHostToDevice);
 	check_cuda(ok, err_cpy);
 	
-	// TODO forest load
-	
+	// Forest load
+	size = 0;
+	for( int i=0; i < numTries; i++ )
+		size += sizeof(forest[i]) - sizeof(int*) + forest[i].getHeapSize();
+	//ok = cudaMalloc ((void**) _gpuForest, size);
+	//check_cuda(ok, err_alloc);
+	// TODO copy heap
+	//ok = cudaMemcpy (*_gpuForest, forest, size, cudaMemcpyHostToDevice);
+	//check_cuda(ok, err_cpy);
+
 	// Allocate memory for the results
 	size=w*h*numLabels*sizeof(unsigned int);
 	ok=cudaMalloc ((void**) _gpuResult, size);
