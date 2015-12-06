@@ -36,15 +36,14 @@ namespace vision
     #endif
 
     // load image data
-	// ATTENTION : ce pragma change les résultats (certaines images dupliquées et d'autres absentes)	
-	#pragma omp parallel for private(iImg, pImgElem, strPostfix, iFeature, imgInput, imgLabel) shared(scaleFactor, it)
+	#pragma omp parallel for private(iImg, pImgElem, strPostfix, iFeature, imgInput, imgLabel) firstprivate(scaleFactor)
 	for (iImg = 0; iImg < nbImg; ++iImg)
     {
  		pImgElem = &(vectImageData[iImg]);
 
         sprintf(strPostfix, "%04d", iImg);
 
-        pImgElem->strInputImage = cfg.imageFolder + "/" + *it;
+        pImgElem->strInputImage = cfg.imageFolder + "/" + cfg.imageFilenames[iImg];
         pImgElem->strFeatureImagesPath = cfg.featureFolder + "/features" + strPostfix;
         pImgElem->strFeatureImagesIntegralPath = cfg.featureFolder + "/features_integral" + strPostfix;
         pImgElem->strLabelImagePath = cfg.groundTruthFolder + "/label_rearranged" + strPostfix + ".png";
@@ -102,8 +101,6 @@ namespace vision
         }
         else
             pImgElem->bLoaded = false;
-		
-		it++;
     }
 
 	cout<<"Image data initialized"<<endl;
