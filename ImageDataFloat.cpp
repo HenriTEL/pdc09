@@ -19,15 +19,15 @@ namespace vision
 
     it = cfg.imageFilenames.begin();
     end = cfg.imageFilenames.end();
+	  
+	int nbImg = end-it;
 
     if (bGenerateFeatures==true)
-        cout << "Set paths and generate HoG features for " << end-it << " images: "<<endl;
+        cout << "Set paths and generate HoG features for " << nbImg << " images: "<<endl;
     else
-        cout << "Just set paths for " << end-it << " images: "<<endl;
+        cout << "Just set paths for " << nbImg << " images: "<<endl;
 
-    vectImageData.resize(end-it);
-	
-	int nbImg = end-it;
+    vectImageData.resize(nbImg);
 
     #if USE_CORR_COEFF
     iNbFeatures = 24;
@@ -36,7 +36,7 @@ namespace vision
     #endif
 
     // load image data
-	#pragma omp parallel for private(iImg, pImgElem, strPostfix, iFeature, imgInput, imgLabel) firstprivate(scaleFactor)
+	#pragma omp parallel for private(iImg, pImgElem, strPostfix, iFeature, imgInput, imgLabel) firstprivate(scaleFactor, nbImg)
 	for (iImg = 0; iImg < nbImg; ++iImg)
     {
  		pImgElem = &(vectImageData[iImg]);
