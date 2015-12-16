@@ -264,7 +264,7 @@ public:
   virtual ~RandomTree()
   {
 	if( heap_size > 0 )
-		delete (TNodeGPU<SplitData, Prediction>*)root;
+		delete [] (TNodeGPU<SplitData, Prediction>*)root;
 	else
 		delete root;
     root = NULL;
@@ -426,10 +426,8 @@ public:
 		TNodeGPU<SplitData, Prediction>* heap;
 
 		root->cpt_node(&node_nb, 1);
-		cout << "NODES : " << node_nb << endl;
 		heap = new TNodeGPU<SplitData, Prediction>[node_nb];
 		root->fill_heap(heap, 0);
-		cout << "FILLED" << endl;
 		delete root;
 		root = (TNode<SplitData, Prediction>*)heap;
 		heap_size = sizeof(heap);

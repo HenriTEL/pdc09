@@ -309,6 +309,7 @@ int main(int argc, char* argv[])
     // delete tree;
     delete pTrainingSet;
 	delete idata;
+    std::cout << "FREEE ?\n";
     delete [] forest;
 
 
