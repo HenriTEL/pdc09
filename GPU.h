@@ -21,7 +21,7 @@ void preKernel(float *features, float *features_integral,
 	int numLabels, int16_t numTries, vision::StrucClassSSF<float> *forest, vision::StrucClassSSF<float> **_gpuForest);
 
 void postKernel(float *_gpuFeatures, float *_gpuFeaturesIntegral, unsigned int *_gpuResult,
-	unsigned int *result, int16_t w, int16_t h, int numLabels);
+	unsigned int *result, int16_t w, int16_t h, int numLabels, vision::StrucClassSSF<float> **_gpuForest);
 	
 
 #endif

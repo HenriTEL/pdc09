@@ -30,6 +30,19 @@ float gpuGetValueIntegral (float *gpuFeaturesIntegral, uint8_t channel,
 	return res;
 }
 
+__global__
+void filter_kernel(unsigned char* in, unsigned char* out, int rows, int cols)
+{
+	/*
+	float val = gpuGetValueIntegral (float *gpuFeaturesIntegral, uint8_t channel, 
+		int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t w, int16_t h);
+	
+	
+	int x = blockIdx.x*blockDim.x + threadIdx.y;
+	int y = blockIdx.y*blockDim.y + threadIdx.x;
+	*/
+}
+
 /***************************************************************************
  Prepare the kernel call:
  - Transfer the features to the GPU
@@ -62,11 +75,11 @@ void preKernel(float *features, float *features_integral,
 	size = 0;
 	for( int i=0; i < numTries; i++ )
 		size += sizeof(forest[i]) - sizeof(int*) + forest[i].getHeapSize();
-	//ok = cudaMalloc ((void**) _gpuForest, size);
-	//check_cuda(ok, err_alloc);
-	// TODO copy heap
-	//ok = cudaMemcpy (*_gpuForest, forest, size, cudaMemcpyHostToDevice);
-	//check_cuda(ok, err_cpy);
+	ok = cudaMalloc ((void**) _gpuForest, size);
+	check_cuda(ok, err_alloc);
+
+	ok = cudaMemcpy (*_gpuForest, forest, size, cudaMemcpyHostToDevice);
+	check_cuda(ok, err_cpy);
 
 	// Allocate memory for the results
 	size=w*h*numLabels*sizeof(unsigned int);
@@ -82,7 +95,7 @@ void preKernel(float *features, float *features_integral,
  - free the GPU memory related to a single image
  ***************************************************************************/
 void postKernel(float *_gpuFeatures, float *_gpuFeaturesIntegral, unsigned int *_gpuResult,
-	unsigned int *result, int16_t w, int16_t h, int numLabels)
+	unsigned int *result, int16_t w, int16_t h, int numLabels, StrucClassSSF<float> **_gpuForest)
 {
 	cudaError_t ok;
 	int size;
@@ -104,5 +117,5 @@ void postKernel(float *_gpuFeatures, float *_gpuFeaturesIntegral, unsigned int *
 	cudaFree(_gpuFeatures);
 	cudaFree(_gpuFeaturesIntegral);
 	cudaFree(_gpuResult);
-	// TODO free the forest
+	cudaFree(_gpuForest);
 }
