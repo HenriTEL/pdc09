@@ -4,6 +4,7 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 #include "TrainingSet.h"
+#include "StrucClassSSF.h"
 
 const std::string err_alloc("could not alloc data in GPU");
 const std::string err_cpy("could not transfert data to GPU");

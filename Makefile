@@ -12,7 +12,7 @@ LDFLAGS=-DGPU $(LCONFIG) `pkg-config opencv --libs` -lstdc++
 
 simple:	sf1_gpu lab2rgb
 
-testgpu:
+testgpu: sf1_gpu
 	./sf1_gpu simple-data/config.txt 6 simple-data/tree
 
 sf1_gpu: GPU.o ConfigReader.o ImageData.o ImageDataFloat.o labelfeature.o label.o main_test_simple.o

@@ -110,20 +110,27 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 		pTS->getFlattenedFeatures(iImage, &features, &noChannels);
 		pTS->getFlattenedIntegralFeatures(iImage, &features_integral, &w_integral, &h_integral);
 
-		profiling("GPU BRO");
+		profiling("\nGPU BRO");
 
 		// Heapify forest
 		for(size_t t = 0; t < cr->numTrees; ++t)
+		{
+			profiling("\nh");
 			forest[t].heapify();
+		}
+		profiling("\nheapify OK");
 					
 		preKernel(features, features_integral, &_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult,
 			box.width, box.height, w_integral, h_integral, noChannels, cr->numLabels, 6, forest, &_gpuForest);
 		
 			
+		profiling("\nPRE OK");
+
 		// TODO lauch kernel
 	
 		postKernel(_gpuFeatures, _gpuFeaturesIntegral, _gpuResult, result,
 			box.width, box.height,  cr->numLabels);
+		profiling("\nPOST OK");
 #else		
         // ==============================================
         // CPU SOLUTION

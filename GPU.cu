@@ -47,12 +47,14 @@ void preKernel(float *features, float *features_integral,
 	size = noChannels*w*h*sizeof(float);
 	ok = cudaMalloc ((void**) _gpuFeatures, size);
 	check_cuda(ok, err_alloc);
+
 	ok = cudaMemcpy (*_gpuFeatures, features, size, cudaMemcpyHostToDevice);
 	check_cuda(ok, err_cpy);
 
 	size = noChannels*w_integral*h_integral*sizeof(float);
 	ok = cudaMalloc ((void**) _gpuFeaturesIntegral, size);
 	check_cuda(ok, err_alloc);
+
 	ok = cudaMemcpy (*_gpuFeaturesIntegral, features_integral, size, cudaMemcpyHostToDevice);
 	check_cuda(ok, err_cpy);
 	

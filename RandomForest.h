@@ -192,13 +192,15 @@ public:
 		return get_left(nId) + 1;
 	}
 
-	void cpt_node( int* nb)
+	void cpt_node( int* max, int nb)
 	{
-		(*nb)++;
 		if( left != NULL )
-			left->cpt_node(nb);
-		if( right != NULL )
-			right->cpt_node(nb);
+			left->cpt_node(max, 3*nb);
+		else if( right != NULL )
+			right->cpt_node(max, 3*nb);
+		else if( (*max) < nb )
+			(*max) = nb;
+			
 	}
 
 	void fill_heap(TNodeGPU<SplitData, Prediction>* heap, int nId)
@@ -423,9 +425,11 @@ public:
 		int node_nb = 0;
 		TNodeGPU<SplitData, Prediction>* heap;
 
-		root->cpt_node(&node_nb);
+		root->cpt_node(&node_nb, 1);
+		cout << "NODES : " << node_nb << endl;
 		heap = new TNodeGPU<SplitData, Prediction>[node_nb];
 		root->fill_heap(heap, 0);
+		cout << "FILLED" << endl;
 		delete root;
 		root = (TNode<SplitData, Prediction>*)heap;
 		heap_size = sizeof(heap);
