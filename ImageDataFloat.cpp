@@ -19,13 +19,15 @@ namespace vision
 
     it = cfg.imageFilenames.begin();
     end = cfg.imageFilenames.end();
+	  
+	int nbImg = end-it;
 
     if (bGenerateFeatures==true)
-        cout << "Set paths and generate HoG features for " << end-it << " images: "<<endl;
+        cout << "Set paths and generate HoG features for " << nbImg << " images: "<<endl;
     else
-        cout << "Just set paths for " << end-it << " images: "<<endl;
+        cout << "Just set paths for " << nbImg << " images: "<<endl;
 
-    vectImageData.resize(end-it);
+    vectImageData.resize(nbImg);
 
     #if USE_CORR_COEFF
     iNbFeatures = 24;
@@ -34,24 +36,25 @@ namespace vision
     #endif
 
     // load image data
-    for (iImg = 0; it != end; ++it, ++iImg)
+	#pragma omp parallel for private(iImg, pImgElem, strPostfix, iFeature, imgInput, imgLabel) firstprivate(scaleFactor, nbImg)
+	for (iImg = 0; iImg < nbImg; ++iImg)
     {
-        pImgElem = &(vectImageData[iImg]);
+ 		pImgElem = &(vectImageData[iImg]);
 
         sprintf(strPostfix, "%04d", iImg);
 
-        pImgElem->strInputImage = cfg.imageFolder + "/" + *it;
+        pImgElem->strInputImage = cfg.imageFolder + "/" + cfg.imageFilenames[iImg];
         pImgElem->strFeatureImagesPath = cfg.featureFolder + "/features" + strPostfix;
         pImgElem->strFeatureImagesIntegralPath = cfg.featureFolder + "/features_integral" + strPostfix;
         pImgElem->strLabelImagePath = cfg.groundTruthFolder + "/label_rearranged" + strPostfix + ".png";
-
+		
         imgLabel = cv::imread(pImgElem->strLabelImagePath, cv::IMREAD_GRAYSCALE);
         if (imgLabel.data==NULL)
         {
             cout<<"Failed to read ground truth image "<<iImg<<": "<<pImgElem->strLabelImagePath<<endl;
-            return false;
+            //return false;
         }
-
+		
         // This is the first image we read, we can set the size of image data
         if (iImg==0)
         {
@@ -67,7 +70,7 @@ namespace vision
             if (imgInput.data==NULL)
             {
                 cout<<"Failed to read input image "<<iImg<<": "<<pImgElem->strInputImage<<endl;
-                return false;
+                //return false;
             }
 
             cv::resize(imgInput, imgInput, cv::Size(), scaleFactor, scaleFactor);
@@ -75,7 +78,7 @@ namespace vision
             if (imgInput.cols!=iWidth || imgInput.rows!=iHeight)
             {
                 cout<<"Scaled input image and ground truth image have different sizes. Did you set the correct scale factor?"<<endl;
-                return false;
+                //return false;
             }
 
             #if USE_CORR_COEFF
@@ -87,7 +90,7 @@ namespace vision
             if (bUseIntegralImages==true)
             {
                 pImgElem->vectFeaturesIntegral.resize(pImgElem->vectFeatures.size());
-                for (iFeature=0; iFeature<pImgElem->vectFeatures.size(); iFeature++)
+				for (iFeature=0; iFeature<pImgElem->vectFeatures.size(); iFeature++)
                     cv::integral(pImgElem->vectFeatures[iFeature], pImgElem->vectFeaturesIntegral[iFeature], CV_32F);
             }
 
@@ -100,7 +103,7 @@ namespace vision
             pImgElem->bLoaded = false;
     }
 
-    cout<<"Image data initialized"<<endl;
+	cout<<"Image data initialized"<<endl;
 
     return true;
 }
