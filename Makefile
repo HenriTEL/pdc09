@@ -1,4 +1,4 @@
-CC = clang-omp++
+CC = g++
 LD = g++
 
 WARNGCC= -Wno-sign-compare -Wno-reorder -Wno-unknown-pragmas -Wno-overloaded-virtual
@@ -13,7 +13,7 @@ LDFLAGS = -DNEBUG -O3 -msse2
 
 
 INCLUDE_DIR =
-LIB_DIR =-L /usr/local/lib/ /usr/local/lib/libiomp5.dylib
+LIB_DIR =-L /usr/lib/gcc/x86_64-redhat-linux/4.8.3 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/libgomp.a -L /usr/lib64 /usr/lib64/libpthread.so
 LIBS = `pkg-config --libs opencv`
 
 simple:	sf1_cpu lab2rgb
