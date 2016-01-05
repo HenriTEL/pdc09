@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <omp.h>
 #include <sys/stat.h>
+#include <chrono>
 
 #include "Global.h"
 #include "ConfigReader.h"
@@ -29,6 +30,7 @@
 #include "label.h"
 
 using namespace std;
+using namespace std::chrono;
 using namespace vision;
 
 
@@ -194,6 +196,8 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 
 int main(int argc, char* argv[])
 {
+	high_resolution_clock::time_point debut = high_resolution_clock::now();
+	
     string strConfigFile;
     ConfigReader cr;
     ImageData *idata = new ImageDataFloat();
@@ -308,9 +312,12 @@ int main(int argc, char* argv[])
     delete pTrainingSet;
 	delete idata;
     delete [] forest;
+	
+	
+	high_resolution_clock::time_point fin = high_resolution_clock::now();
+	duration<double> temps = duration_cast<duration<double>>(fin - debut);
 
-
-    std::cout << "Terminated successfully.\n";
+    cout << "Terminated in " << temps.count() << " seconds.\n";
 
     return 0;
 }
