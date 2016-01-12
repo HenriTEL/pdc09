@@ -4,7 +4,7 @@ LD = g++
 WARNGCC= -Wno-sign-compare -Wno-reorder -Wno-unknown-pragmas -Wno-overloaded-virtual
 
 # --- With optimisation
-CPPFLAGS = -fopenmp -std=c++0x -DNDEBUG -O3 -msse2 -Wall $(WARNGCC)
+CPPFLAGS = -fopenmp -std=c++11 -DNDEBUG -O3 -msse2 -Wall $(WARNGCC)
 LDFLAGS = -DNEBUG -O3 -msse2
 
 # --- Debugging
@@ -21,6 +21,7 @@ simple:	sf1_cpu lab2rgb
 
 testcpu:
 	./sf1_cpu simple-data/config.txt 6 simple-data/tree
+	rm simple-data/features/*
 
 %.o: %.cpp 
 	$(CC) -c $(CPPFLAGS) $(INCLUDE_DIR) $< -o $@
