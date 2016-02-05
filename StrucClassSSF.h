@@ -73,6 +73,36 @@ public:
     return curNode->getPrediction().hist.begin();
   }
 
+  vector<uint32_t>::const_iterator /* & */ predictPtrGPU(Sample<FeatureType> &sample) const
+  {
+	int nId = 0;
+	TNode<SplitData<FeatureType>, Prediction>* curNode = this->getRoot();
+    SplitResult sr = SR_LEFT;
+    while (!curNode->isLeaf() && sr != SR_INVALID)
+    {
+    if (this->bUseRandomBoxes==true)
+        sr = this->split(curNode->getSplitData(), sample);
+    else
+        sr = AbstractSemanticSegmentationTree<IErrorData,FeatureType>::split(curNode->getSplitData(), sample);
+
+    switch (sr)
+      {
+      case SR_LEFT:
+		nId = curNode->get_left(nId);
+        curNode = curNode->get_node(this->getRoot(), nId);
+        break;
+      case SR_RIGHT:
+        nId = curNode->get_right(nId);
+        curNode = curNode->get_node(this->getRoot(), nId);
+        break;
+      default:
+        break;
+      }
+    }
+
+    return curNode->getPrediction().hist.begin();
+  }
+ 
   /***************************************************************************
    ***************************************************************************/
 

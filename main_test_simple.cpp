@@ -27,7 +27,10 @@
 #include "StrucClassSSF.h"
 
 #include "label.h"
+
+#ifdef GPU
 #include "GPU.h"
+#endif
 
 using namespace std;
 using namespace vision;
@@ -102,7 +105,6 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
         // GPU SOLUTION
         // ==============================================
 		int16_t w_integral, h_integral;
-		unsigned int *result = new unsigned int [box.height*box.width*cr->numLabels];
 		unsigned int *_gpuResult;
 		StrucClassSSF<float> * _gpuForest;
 		float *_gpuFeatures, *_gpuFeaturesIntegral;
@@ -110,10 +112,53 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 		pTS->getFlattenedFeatures(iImage, &features, &noChannels);
 		pTS->getFlattenedIntegralFeatures(iImage, &features_integral, &w_integral, &h_integral);
 
-		// Heapify forest
+		/* Heapify forest*/
 		for(size_t t = 0; t < cr->numTrees; ++t)
 			forest[t].heapify();
-					
+		
+
+        profiling("");
+        int lPXOff = cr->labelPatchWidth / 2;
+    	int lPYOff = cr->labelPatchHeight / 2;
+        // Initialize the result matrices
+		int lenRes = box.height*box.width*cr->numLabels;
+		unsigned int *result = new unsigned int [lenRes];
+        for(int j = 0; j < lenRes; ++j)
+            result[j] = 0;
+        
+        
+        for(s.y = 0; s.y < box.height; ++s.y)
+        // Iterate over input image pixels
+			for(s.x = 0; s.x < box.width; ++s.x)
+			// Obtain forest predictions
+			// Iterate over all trees
+			{
+				for(size_t t = 0; t < cr->numTrees; ++t)
+				// The prediction itself.
+				// The given Sample object s contains the imageId and the pixel coordinates.
+				// p is an iterator to a vector over labels (attribut hist of class Prediction)
+				// This labels correspond to a patch centered on position s
+				// (this is the structured version of a random forest!)
+				{
+					vector<uint32_t>::const_iterator p = forest[t].predictPtr(s);
+
+
+					for (pt.y=(int)s.y-lPYOff; pt.y <= (int)s.y+(int)lPYOff; ++pt.y)
+					for (pt.x=(int)s.x-(int)lPXOff; pt.x <= (int)s.x+(int)lPXOff; ++pt.x,++p)
+					{
+						if (*p<0 || *p >= (size_t)cr->numLabels)
+						{
+							std::cerr << "Invalid label in prediction: " << (int) *p << "\n";
+							exit(1);
+						}
+
+						if (*p * pt.y * pt.x < lenRes)
+							result[*p * pt.y * pt.x] += 1;
+					}
+
+				}
+			}
+		/*			
 		preKernel(features, features_integral, &_gpuFeatures, &_gpuFeaturesIntegral, &_gpuResult,
 			box.width, box.height, w_integral, h_integral, noChannels, cr->numLabels, 6, forest, &_gpuForest);
 		
@@ -123,6 +168,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
 	
 		postKernel(_gpuFeatures, _gpuFeaturesIntegral, _gpuResult, result,
 			box.width, box.height,  cr->numLabels, &_gpuForest);
+		*/
 #else		
         // ==============================================
         // CPU SOLUTION
@@ -179,7 +225,7 @@ void testStructClassForest(StrucClassSSF<float> *forest, ConfigReader *cr, Train
             for(int j = 1; j < cr->numLabels; ++j)
             {
 #ifdef GPU
-				//maxIdx = (result[j].at<float>(pt) > result[maxIdx].at<float>(pt)) ? j : maxIdx;
+				maxIdx = (result[j * pt.x * pt.y] > result[maxIdx * pt.x * pt.y]) ? j : maxIdx;
 #else
                 maxIdx = (result[j].at<float>(pt) > result[maxIdx].at<float>(pt)) ? j : maxIdx;
 #endif

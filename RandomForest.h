@@ -36,7 +36,7 @@ namespace vision
 	  TNodeGPU() {}
 
 	  TNodeGPU( SplitData splitData, Prediction prediction,
-		uint32_t start, uint32_t end, uint16_t depth, uint32_t idx )
+		int start, int end, int depth, int idx )
 	  {
 			this->splitData = splitData;
 			this->prediction = prediction;
@@ -51,9 +51,9 @@ namespace vision
 	  // ====================  DATA MEMBERS  =======================================
 	  SplitData splitData;
 	  Prediction prediction;
-	  uint32_t start, end;
-	  uint16_t depth;
-	  uint32_t idx;
+	  int start, end;
+	  int depth;
+	  int idx;
 	};
 // -----  end of class TNodeGPU  -----
 //#endif
@@ -87,7 +87,11 @@ public:
   // ====================  ACCESSORS     =======================================
   bool isLeaf() const
   {
+#ifdef GPU
+	return idx == -1
+#else
     return left == NULL;
+#endif
   }
   int getStart() const
   {
@@ -182,6 +186,11 @@ public:
   }
 
 #ifdef GPU
+	TNodeGPU<SplitData, Prediction> get_node(TNodeGPU<SplitData, Prediction>* heap, int nId )
+	{
+		return heap[nId];
+	}
+
 	int get_left( int nId )
 	{
 		return 2 * nId + 1;
@@ -200,17 +209,28 @@ public:
 			right->cpt_node(max, 3*nb);
 		else if( (*max) < nb )
 			(*max) = nb;
-			
 	}
 
 	void fill_heap(TNodeGPU<SplitData, Prediction>* heap, int nId)
 	{
-		heap[nId] = TNodeGPU<SplitData, Prediction>( this->splitData,
-			this->prediction, this->start, this->end, this->depth, this->idx );
+		if( this != NULL )
+			heap[nId] = TNodeGPU<SplitData, Prediction>( this->splitData,
+				this->prediction, this->start, this->end, this->depth, this->idx );
+		else
+			heap[nId] = TNodeGPU<SplitData, Prediction>( this->splitData,
+				this->prediction, this->start, this->end, this->depth, -1 );
+
 		if( left != NULL )
 			left->fill_heap(heap, get_left(nId));
+		else
+			heap[get_left(nId)] = TNodeGPU<SplitData, Prediction>( this->splitData,
+				this->prediction, this->start, this->end, this->depth, -1 );
+
 		if( right != NULL )
 			left->fill_heap(heap, get_right(nId));
+		else
+			heap[get_right(nId)] = TNodeGPU<SplitData, Prediction>( this->splitData,
+				this->prediction, this->start, this->end, this->depth, -1 );
 	}
 #endif
   // ====================  OPERATORS     =======================================
@@ -483,7 +503,11 @@ protected:
 
   TNode<SplitData,Prediction>* getRoot() const
   {
+#ifdef GPU
+	return &root[0];
+#else
     return root;
+#endif
   }
 
   virtual void writeHeader(ostream &out) const=0;
@@ -570,7 +594,7 @@ protected:
       }
     }
   }
-
+  
   virtual void write(const TNode<SplitData, Prediction> *node, ostream &out) const
   {
     out << (node->isLeaf() ? "L " : "N ");
